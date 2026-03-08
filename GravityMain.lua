@@ -1,5 +1,5 @@
 --[[
-    GRAVITY.LUA - Professional Roblox Cheat Core (V10)
+    GRAVITY.LUA - Professional Roblox Cheat Core (V10 - FIXED)
     ULTIMATE NATIVE ENGINE: Bypasses all visual blocks
 	Features: Native ScreenGui, Smooth Tweens, Auto-Bind, ESP/Aimbot
 ]]
@@ -11,6 +11,9 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+
+print("------------------------------------------")
+print("GRAVITY: STARTING SYSTEM...")
 
 -- [[ MASTER SETTINGS ]]
 local Settings = {
@@ -24,13 +27,13 @@ local Settings = {
 
 -- [[ UI ENGINE ]]
 local function CreateUI()
-    -- Finding the best place to hide the UI
+    -- Finding the best place to hide the UI (Bypasses security)
     local parent = (gethui and gethui()) or (CoreGui:FindFirstChild("RobloxGui")) or CoreGui
     
     local Screen = Instance.new("ScreenGui")
-    Screen.Name = "GravityEngine_V10"
+    Screen.Name = "GravityEngine_V10_PRO"
     Screen.IgnoreGuiInset = true
-    Screen.DisplayOrder = 999
+    Screen.DisplayOrder = 1000
     Screen.Parent = parent
     
     -- [[ BIND OVERLAY ]]
@@ -76,7 +79,7 @@ local function CreateUI()
     MainStroke.Parent = Main
 
     local Banner = Instance.new("Frame")
-    Banner.Size = UDim2.new(1, 0, 0, 60)
+    Banner.Size = UDim2.new(1, 0, 0, 50)
     Banner.BackgroundColor3 = Color3.new(0,0,0)
     Banner.BorderSizePixel = 0
     Banner.Parent = Main
@@ -87,48 +90,40 @@ local function CreateUI()
     GLabel.Text = "GRAVITY.LUA"
     GLabel.TextColor3 = Color3.new(1,1,1)
     GLabel.Font = Enum.Font.GothamBold
-    GLabel.TextSize = 22
+    GLabel.TextSize = 20
     GLabel.TextXAlignment = Enum.TextXAlignment.Left
     GLabel.BackgroundTransparency = 1
     GLabel.Parent = Banner
 
-    -- Tabs Area
+    -- Tab System
     local Tabs = Instance.new("Frame")
     Tabs.Size = UDim2.new(1, 0, 0, 40)
-    Tabs.Position = UDim2.new(0, 0, 0, 60)
+    Tabs.Position = UDim2.new(0, 0, 0, 50)
     Tabs.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
     Tabs.Parent = Main
     
-    local TabList = {"AIM", "VISUALS", "PLAYER"}
-    local ContentArea = Instance.new("ScrollingFrame")
-    ContentArea.Size = UDim2.new(1, 0, 1, -100)
-    ContentArea.Position = UDim2.new(0, 0, 0, 100)
-    ContentArea.BackgroundTransparency = 1
-    ContentArea.ScrollBarThickness = 0
-    ContentArea.Parent = Main
-    
-    local function CreateTabButton(name, index)
+    local TabListNames = {"AIM", "VISUALS", "PLAYER"}
+    for i, name in pairs(TabListNames) do
         local b = Instance.new("TextButton")
-        b.Size = UDim2.new(1/#TabList, 0, 1, 0)
-        b.Position = UDim2.Surveyor( (index-1)/#TabList, 0, 0, 0)
+        b.Size = UDim2.new(1/#TabListNames, 0, 1, 0)
+        b.Position = UDim2.new((i-1)/#TabListNames, 0, 0, 0)
         b.Text = name
         b.Font = Enum.Font.GothamBold
         b.TextSize = 10
-        b.TextColor3 = index == 1 and Color3.new(1,1,1) or Color3.fromRGB(150, 150, 150)
+        b.TextColor3 = i == 1 and Color3.new(1,1,1) or Color3.fromRGB(150, 150, 150)
         b.BackgroundTransparency = 1
         b.Parent = Tabs
-        return b
     end
 
-    -- Logic for Binds
-    local loop; loop = UserInputService.InputBegan:Connect(function(input)
+    -- Bind Logic
+    local connection; connection = UserInputService.InputBegan:Connect(function(input)
         if not Settings.configured then
             if input.UserInputType == Enum.UserInputType.Keyboard then
                 Settings.menu_key = input.KeyCode
                 Settings.configured = true
                 Setup.Visible = false
                 Main.Visible = true
-                print("GRAVITY: MENU KEY BOUND TO " .. tostring(input.KeyCode))
+                print("GRAVITY V10: MENU KEY BOUND TO " .. tostring(input.KeyCode))
             end
         else
             if input.KeyCode == Settings.menu_key then
@@ -138,14 +133,13 @@ local function CreateUI()
     end)
 end
 
--- [[ ESP LOGIC ]]
+-- [[ ESP DRAWING LOGIC ]]
 local Cache = {}
 local function CreateESP(p)
     if p == LocalPlayer then return end
     Cache[p] = {
         Box = Drawing.new("Square"),
-        Name = Drawing.new("Text"),
-        Line = Drawing.new("Line")
+        Name = Drawing.new("Text")
     }
     local e = Cache[p]
     e.Box.Thickness = 1
@@ -175,8 +169,8 @@ RunService.RenderStepped:Connect(function()
                 esp.Name.Visible = false
             end
         else
-            esp.Box.Visible = false
-            esp.Name.Visible = false
+            if esp.Box then esp.Box.Visible = false end
+            if esp.Name then esp.Name.Visible = false end
         end
     end
 end)
@@ -186,4 +180,5 @@ for _,p in pairs(Players:GetPlayers()) do CreateESP(p) end
 
 -- START ENGINE
 CreateUI()
-print("GRAVITY V10 - ULTIMATE NATIVE ENGINE LOADED.")
+print("GRAVITY V10 - ULTIMATE NATIVE ENGINE LOADED SUCCESSFULLY.")
+print("------------------------------------------")
