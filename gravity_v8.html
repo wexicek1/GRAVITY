@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity - Premium Cheat GUI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --gravity-blue: 45, 100, 255;
+            --menu-bg: 10, 10, 12;
+            --item-bg: 20, 20, 25;
+            --text-main: 255, 255, 255;
+            --text-dim: 160, 160, 160;
+            --opacity: 0.89;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: transparent !important;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none !important;
+            cursor: none !important;
+        }
+
+        #root {
+            height: 100%;
+            width: 100%;
+            display: none;
+            perspective: 2000px;
+        }
+
+        /* Overlays */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            pointer-events: auto !important;
+        }
+
+        .ModalBox {
+            background: rgba(10, 10, 12, 0.95);
+            width: 220px;
+            padding: 20px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid rgba(var(--gravity-blue), 0.5);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 1);
+        }
+
+        .ModalTitle {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .ModalValue {
+            font-size: 20px;
+            color: #fff;
+            font-weight: 800;
+            margin: 15px 0;
+        }
+
+        .ModalFooter {
+            font-size: 9px;
+            color: rgb(var(--gravity-blue));
+            font-weight: 700;
+            margin-top: 15px;
+        }
+
+        #setup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            pointer-events: auto !important;
+        }
+
+        .SetupBox {
+            background: rgba(10, 10, 12, 0.95);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--gravity-blue);
+            box-shadow: 0 0 30px rgba(var(--gravity-blue), 0.2);
+        }
+
+        /* Main UI */
+        .PContainer {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px) rotateX(20deg);
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+        }
+
+        .PContainer.show {
+            opacity: 1;
+            transform: scale(1) translateY(0) rotateX(0deg);
+        }
+
+        .PScroll {
+            width: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .PSProgress {
+            position: absolute;
+            width: 100%;
+            background: rgb(var(--gravity-blue));
+            box-shadow: 0 0 20px rgba(var(--gravity-blue), 0.8);
+            transition: top 0.4s cubic-bezier(0.2, 0, 0, 1), height 0.4s ease;
+            border-radius: 4px;
+        }
+
+        .PRightElements {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(10, 10, 12, var(--opacity));
+            backdrop-filter: blur(20px);
+        }
+
+        .PBanner {
+            width: 100%;
+            height: 70px;
+            background: #000;
+            overflow: hidden;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .BannerTitle {
+            position: absolute;
+            bottom: 12px;
+            left: 20px;
+            font-size: 26px;
+            font-weight: 800;
+            font-style: italic;
+            letter-spacing: -2px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(var(--gravity-blue), 0.5);
+        }
+
+        .PCategories {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .PCategory {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-dim);
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            z-index: 2;
+        }
+
+        .PCategory:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .PCategory.active {
+            color: #fff;
+        }
+
+        .TabIndicator {
+            position: absolute;
+            bottom: 0;
+            height: 2px;
+            background: rgb(var(--gravity-blue));
+            box-shadow: 0 0 15px rgba(var(--gravity-blue), 1);
+            transition: left 0.4s cubic-bezier(0.2, 0, 0, 1), width 0.4s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .PTabsArea {
+            width: 100%;
+            height: 480px;
+            overflow: hidden;
+        }
+
+        .PTabsScroll {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow-y: auto;
+        }
+
+        .PTabsScroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .PTabItem {
+            width: 100%;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-radius: 6px;
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            position: relative;
+        }
+
+        .PTabItem.selected {
+            background: rgba(255, 255, 255, 0.03);
+            transform: scale(1.01);
+        }
+
+        .PTabItem.selected::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 3px;
+            height: 60%;
+            background: rgb(var(--gravity-blue));
+            border-radius: 0 4px 4px 0;
+        }
+
+        .PTLabel {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            flex: 1;
+        }
+
+        .Checkbox {
+            width: 34px;
+            height: 18px;
+            background: #111;
+            border-radius: 20px;
+            position: relative;
+            transition: background 0.4s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .Checkbox.Checked {
+            background: rgb(0, 255, 100);
+            box-shadow: 0 0 20px rgba(0, 255, 100, 0.6);
+            border-color: rgba(0, 255, 100, 0.5);
+        }
+
+        .Checkbox .Inside {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .Checkbox.Checked .Inside {
+            left: 18px;
+            transform: scale(1.1);
+        }
+
+        @keyframes tabSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .tab-anim {
+            animation: tabSlideIn 0.4s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+
+        .ListArrow {
+            font-size: 10px;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ListArrow span {
+            color: #fff;
+            font-weight: 700;
+            font-size: 11px;
+        }
+
+        .Slider {
+            width: 80px;
+            height: 3px;
+            background: #111;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .Slider .Progress {
+            height: 100%;
+            background: #fff;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        .Slider .Value {
+            position: absolute;
+            right: -35px;
+            font-size: 10px;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        /* Troll Options Styling */
+        .TrollBanner {
+            font-size: 10px;
+            color: rgb(var(--gravity-blue));
+            font-weight: 800;
+            margin-bottom: 5px;
+            padding-left: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .Desc {
+            position: absolute;
+            top: 40px;
+            right: 400px;
+            background: rgba(10, 10, 12, var(--opacity));
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 12px;
+            border-right: 4px solid rgb(var(--gravity-blue));
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.4s ease;
+            backdrop-filter: blur(20px);
+            width: 240px;
+            text-align: right;
+            color: #fff;
+        }
+
+        .Desc.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="setup-overlay">
+        <div class="SetupBox">
+            <h2 id="setup-title">GRAVITY SETUP</h2>
+            <p id="setup-p">Press any key to bind your Menu Toggle.</p>
+            <div id="key-display"
+                style="font-size: 32px; color: rgb(var(--gravity-blue)); font-weight: 800; margin: 20px 0;">---</div>
+            <div id="confirm-buttons" style="display: none; gap: 10px; justify-content: center;">
+                <button onclick="confirmKey()"
+                    style="padding: 10px 20px; background: rgb(var(--gravity-blue)); border: none; color: #fff; font-weight: 800; border-radius: 4px; cursor: pointer;">ARE
+                    YOU SURE?</button>
+                <button onclick="resetSetup()"
+                    style="padding: 10px 20px; background: #222; border: none; color: #fff; font-weight: 800; border-radius: 4px; cursor: pointer;">NO</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div class="ModalBox">
+            <div class="ModalTitle" id="modal-title">SET VALUE</div>
+            <input type="number" id="modal-input" placeholder="Value..."
+                style="width: 100%; background: #111; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px; font-weight: 700; text-align: center; border-radius: 4px; outline: none; margin-bottom: 10px; pointer-events: auto !important;">
+            <div class="ModalValue" id="modal-value-display">0</div>
+            <input type="range" id="modal-slider"
+                style="width: 100%; margin: 10px 0; cursor: pointer; pointer-events: auto !important;">
+            <div class="ModalFooter">ENTER: CONFIRM | BACKSPACE: CLOSE</div>
+        </div>
+    </div>
+
+    <div id="root">
+        <div class="PContainer" id="menu-container">
+            <div class="PScroll">
+                <div class="PSProgress" id="scroll-progress"></div>
+            </div>
+            <div class="PRightElements">
+                <div class="PBanner">
+                    <img src="https://i.imgur.com/k6w9Ww4.png" alt="Gravity Banner">
+                    <div class="BannerTitle">GRAVITY<span>.LUA</span></div>
+                </div>
+                <div class="PCategories" id="category-list">
+                    <div class="TabIndicator" id="tab-indicator"></div>
+                </div>
+                <div class="PTabsArea">
+                    <div class="PTabsScroll" id="tab-list"></div>
+                </div>
+            </div>
+        </div>
+        <div class="Desc" id="item-description"></div>
+    </div>
+
+    <script>
+        const themes = { blue: '45, 100, 255', red: '255, 50, 50', green: '50, 255, 70', purple: '180, 50, 255' };
+        const menuData = {
+            categories: [
+                {
+                    id: 'aim', label: 'AIMBOT', items: [
+                        { id: 'aim_enable', label: 'Enable Aimbot', type: 'checkbox', value: false, desc: 'Auto-lock targeting' },
+                        { id: 'aim_smooth', label: 'Smoothing', type: 'slider', min: 1, max: 20, value: 5, desc: 'Locked mouse speed' },
+                        { id: 'aim_fov', label: 'Field of View', type: 'slider', min: 10, max: 800, value: 200, desc: 'Aimbot radius' }
+                    ]
+                },
+                {
+                    id: 'esp', label: 'VISUALS', items: [
+                        { id: 'esp_enable', label: 'Enable Esp', type: 'checkbox', value: true, desc: 'Master visuals toggle' },
+                        { id: 'esp_outline', label: 'Enable outline', type: 'checkbox', value: false, desc: 'Draw boundary borders' },
+                        { id: 'esp_type', label: 'Esp type', type: 'list', options: ['Static', 'Dynamic'], value: 0, desc: 'Viewport draw mode' },
+                        { id: 'esp_names', label: 'Name Tags', type: 'checkbox', value: true, desc: 'Show player name labels' },
+                        { id: 'esp_weapon', label: 'Weapon', type: 'checkbox', value: false, desc: 'Show held tool info' },
+                        { id: 'esp_boxes', label: 'Boxes', type: 'checkbox', value: true, desc: 'Standard bounding boxes' },
+                        { id: 'esp_corner', label: 'Corner Boxes', type: 'checkbox', value: false, desc: 'L-shape corner borders' },
+                        { id: 'esp_fill', label: 'Fill Boxes', type: 'checkbox', value: false, desc: 'Translucent box background' },
+                        { id: 'esp_skel', label: 'Skeletons', type: 'checkbox', value: false, desc: 'Bones ESP framework' },
+                        { id: 'esp_health', label: 'Health Bars', type: 'checkbox', value: true, desc: 'Dynamic vitals bar' },
+                        { id: 'esp_snap', label: 'Snap Lines', type: 'checkbox', value: false, desc: 'Tracers from screen base' }
+                    ]
+                },
+                { id: 'players', label: 'PLAYER', items: [] },
+                {
+                    id: 'other', label: 'OTHER', items: [
+                        { id: 'set_theme', label: 'Menu Theme', type: 'theme', value: 'blue', desc: 'Sync interface color' },
+                        { id: 'set_opacity', label: 'Translucency', type: 'slider', min: 20, max: 100, value: 89, desc: 'GUI Transparency %' }
+                    ]
+                }
+            ]
+        };
+
+        let currentCategory = 0, currentItem = 0, isOpen = false, isConfigured = false, isModalOpen = false, activeModalItem = null, menuToggleKey = null, pendingKey = null;
+        let viewedPlayer = null;
+
+        function syncWithLua() {
+            const settings = {};
+            menuData.categories.forEach(cat => cat.items.forEach(item => { settings[item.id] = item.value; }));
+            console.log("GRAVITY_SYNC:" + JSON.stringify(settings));
+        }
+
+        // Catch player updates from Lua
+        window.onConsoleLog = (msg) => {
+            if (msg.startsWith("GRAVITY_PLAYERS:")) {
+                const names = JSON.parse(msg.split("GRAVITY_PLAYERS:")[1]);
+                const cat = menuData.categories.find(c => c.id === 'players');
+                cat.items = names.map(n => ({ id: 'plyr_' + n, label: n, type: 'player_entry', desc: 'Manage ' + n }));
+                if (isOpen && currentCategory === 2) renderItems();
+            }
+        };
+
+        function init() {
+            renderCategories(); renderItems();
+            const slider = document.getElementById('modal-slider'), numInput = document.getElementById('modal-input');
+            slider.oninput = (e) => { document.getElementById('modal-value-display').innerText = e.target.value; numInput.value = e.target.value; if (activeModalItem) { activeModalItem.value = parseFloat(e.target.value); renderItems(); } };
+            numInput.oninput = (e) => { slider.value = e.target.value; document.getElementById('modal-value-display').innerText = e.target.value; if (activeModalItem) { activeModalItem.value = parseFloat(e.target.value) || 0; renderItems(); } };
+
+            window.onkeydown = (event) => {
+                const key = event.key;
+                if (isModalOpen) { if (key === 'Enter') { closeModal(); syncWithLua(); } else if (key === 'Backspace' && numInput.value === "") closeModal(); else if (key === 'Escape') closeModal(); return; }
+                if (!isConfigured) { pendingKey = key; document.getElementById('key-display').innerText = key.toUpperCase(); document.getElementById('confirm-buttons').style.display = 'flex'; return; }
+                if (key === menuToggleKey) { toggleMenu(); return; }
+                if (!isOpen) return;
+                if (key === 'ArrowUp' || key.toLowerCase() === 'i') navigate(-1);
+                else if (key === 'ArrowDown' || key.toLowerCase() === 'k') navigate(1);
+                else if (key.toLowerCase() === 'j') handleHorizontal(-1);
+                else if (key.toLowerCase() === 'l') handleHorizontal(1);
+                else if (key === 'Enter') handleEnter();
+                else if (key === 'Escape' || key === 'Backspace') {
+                    if (viewedPlayer) { viewedPlayer = null; currentItem = 0; renderItems(); } else toggleMenu();
+                }
+            };
+        }
+
+        function handleEnter() {
+            if (viewedPlayer) {
+                const trolls = ['Teleport', 'Spectate', 'Unspectate', 'Fling'];
+                console.log("GRAVITY_TROLL:" + viewedPlayer + ":" + trolls[currentItem]);
+                return;
+            }
+            const item = menuData.categories[currentCategory].items[currentItem];
+            if (item.type === 'slider') openModal(item);
+            else if (item.type === 'checkbox') { item.value = !item.value; renderItems(); syncWithLua(); }
+            else if (item.type === 'player_entry') { viewedPlayer = item.label; currentItem = 0; renderItems(); }
+        }
+
+        function navigate(dir) {
+            const len = viewedPlayer ? 4 : menuData.categories[currentCategory].items.length;
+            if (len === 0) return;
+            currentItem = (currentItem + dir + len) % len;
+            renderItems(); updateSelection();
+        }
+
+        function handleHorizontal(dir) {
+            if (viewedPlayer) return;
+            const item = menuData.categories[currentCategory].items[currentItem];
+            if (item && item.type === 'list') { item.value = (item.value + dir + item.options.length) % item.options.length; renderItems(); return; }
+            if (item && item.type === 'theme') {
+                const colors = Object.keys(themes); let idx = (colors.indexOf(item.value) + dir + colors.length) % colors.length;
+                item.value = colors[idx]; document.documentElement.style.setProperty('--gravity-blue', themes[item.value]); renderItems();
+            } else {
+                currentCategory = (currentCategory + dir + 4) % 4; currentItem = 0; renderCategories(); renderItems(); updateSelection();
+            }
+        }
+
+        function renderCategories() {
+            const list = document.getElementById('category-list');
+            list.innerHTML = '<div class="TabIndicator" id="tab-indicator"></div>';
+            menuData.categories.forEach((cat, index) => {
+                const div = document.createElement('div');
+                div.className = `PCategory ${index === currentCategory ? 'active' : ''}`;
+                div.innerText = cat.label;
+                list.appendChild(div);
+            });
+            updateTabIndicator();
+        }
+
+        function renderItems() {
+            const list = document.getElementById('tab-list');
+            list.classList.remove('tab-anim');
+            list.innerHTML = '';
+            void list.offsetWidth; // Force reflow
+            list.classList.add('tab-anim');
+
+            if (viewedPlayer) {
+                list.innerHTML = `<div class="TrollBanner">Target: ${viewedPlayer}</div>`;
+                const trolls = ['Teleport', 'Spectate', 'Unspectate', 'Fling'];
+                trolls.forEach((t, i) => {
+                    const div = document.createElement('div');
+                    div.className = `PTabItem ${i === currentItem ? 'selected' : ''}`;
+                    div.innerHTML = `<span class="PTLabel">${t}</span><i class="fas fa-bolt" style="font-size:10px; color:var(--text-dim)"></i>`;
+                    list.appendChild(div);
+                });
+                updateScrollCustom(4); return;
+            }
+            const items = menuData.categories[currentCategory].items;
+            items.forEach((item, index) => {
+                const div = document.createElement('div'); div.className = `PTabItem ${index === currentItem ? 'selected' : ''}`;
+                let ctrl = item.type === 'checkbox' ? `<div class="Checkbox ${item.value ? 'Checked' : ''}"><div class="Inside"></div></div>` :
+                    item.type === 'slider' ? `<div class="Slider"><div class="Progress" style="width:${(item.value - item.min) / (item.max - item.min) * 100}%"></div><div class="Value">${item.value}</div></div>` :
+                        item.type === 'list' ? `<div class="ListArrow"><i class="fas fa-caret-left"></i><span>${item.options[item.value]}</span><i class="fas fa-caret-right"></i></div>` :
+                            item.type === 'player_entry' ? `<i class="fas fa-chevron-right" style="font-size:10px; color:var(--text-dim)"></i>` :
+                                item.type === 'theme' ? `<div style="width:12px; height:12px; border-radius:50%; background:rgb(${themes[item.value]})"></div>` : '';
+                div.innerHTML = `<span class="PTLabel">${item.label}</span>${ctrl}`;
+                list.appendChild(div);
+            });
+            updateScroll();
+        }
+
+        function updateTabIndicator() { const ind = document.getElementById('tab-indicator'); const w = 100 / 4; ind.style.width = `${w}%`; ind.style.left = `${currentCategory * w}%`; }
+        function updateScroll() { const len = menuData.categories[currentCategory].items.length; const prog = document.getElementById('scroll-progress'); if (len > 0) { prog.style.height = `${(1 / len) * 100}%`; prog.style.top = `${(currentItem / len) * 100}%`; } }
+        function updateScrollCustom(len) { const prog = document.getElementById('scroll-progress'); prog.style.height = `${(1 / len) * 100}%`; prog.style.top = `${(currentItem / len) * 100}%`; }
+        function updateSelection() {
+            let descStr = '';
+            if (viewedPlayer) {
+                const trolls = ['Jump to this player', 'Watch player angle', 'Stop spectating', 'Strong fling knockback'];
+                descStr = trolls[currentItem];
+            } else {
+                const item = menuData.categories[currentCategory].items[currentItem];
+                descStr = item ? item.desc : '';
+            }
+            const desc = document.getElementById('item-description'); desc.classList.remove('show');
+            setTimeout(() => { desc.innerText = descStr; if (isOpen) desc.classList.add('show'); }, 200);
+        }
+
+        function confirmKey() { menuToggleKey = pendingKey; isConfigured = true; document.getElementById('setup-overlay').style.display = 'none'; toggleMenu(); syncWithLua(); }
+        function resetSetup() { pendingKey = null; document.getElementById('key-display').innerText = "---"; document.getElementById('confirm-buttons').style.display = 'none'; }
+        function toggleMenu() { isOpen = !isOpen; const c = document.getElementById('menu-container'); if (isOpen) { document.getElementById('root').style.display = 'block'; setTimeout(() => { c.classList.add('show'); updateSelection(); }, 10); } else { c.classList.remove('show'); document.getElementById('item-description').classList.remove('show'); setTimeout(() => document.getElementById('root').style.display = 'none', 600); } }
+        function closeModal() { isModalOpen = false; activeModalItem = null; document.getElementById('modal-overlay').style.display = 'none'; syncWithLua(); }
+        function openModal(item) { isModalOpen = true; activeModalItem = item; const modal = document.getElementById('modal-overlay'), input = document.getElementById('modal-input'), slider = document.getElementById('modal-slider'); document.getElementById('modal-title').innerText = item.label; document.getElementById('modal-value-display').innerText = item.value; input.value = item.value; slider.min = item.min; slider.max = item.max; slider.value = item.value; modal.style.display = 'flex'; setTimeout(() => input.focus(), 100); }
+
+        init();
+    </script>
+</body>
+
+</html>
