@@ -110,8 +110,12 @@ end
 
 local function RemovePlayerESP(player)
     if Cache[player] then
-        for _, obj in pairs(Cache[player]) do
-            if type(obj) == "table" then for _, l in pairs(obj) do l:Remove() end else obj:Remove() end
+        for _, obj in pairs(Cache[player]) do 
+            if type(obj) == "table" then 
+                for _, l in pairs(obj) do if type(l) == "userdata" then l:Remove() end end 
+            elseif type(obj) == "userdata" then 
+                obj:Remove() 
+            end 
         end
         Cache[player] = nil
     end
@@ -173,10 +177,22 @@ local function HandleESP()
                     esp.Name.Visible, esp.Name.Position, esp.Name.Text = true, Vector2.new(hrpPos.X, y-15), player.Name
                 else esp.Name.Visible = false end
             else
-                for _, obj in pairs(esp) do if type(obj) == "table" then for _, l in pairs(obj) do l.Visible = false end else obj.Visible = false end end
+                for _, obj in pairs(esp) do 
+                    if type(obj) == "table" then 
+                        for _, l in pairs(obj) do if type(l) == "userdata" then l.Visible = false end end 
+                    elseif type(obj) == "userdata" then 
+                        obj.Visible = false 
+                    end 
+                end
             end
         else
-            for _, obj in pairs(esp) do if type(obj) == "table" then for _, l in pairs(obj) do l.Visible = false end else obj.Visible = false end end
+            for _, obj in pairs(esp) do 
+                if type(obj) == "table" then 
+                    for _, l in pairs(obj) do if type(l) == "userdata" then l.Visible = false end end 
+                elseif type(obj) == "userdata" then 
+                    obj.Visible = false 
+                end 
+            end
         end
     end
 end
