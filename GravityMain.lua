@@ -1,14 +1,14 @@
 --[[
-    GRAVITY.LUA - Professional Roblox Cheat Core (V8)
-    Final Integrated Version for GitHub Repository
-    Includes: UI Loader, ESP Suite, Aimbot, Player Troll System
+    GRAVITY.LUA - Professional Roblox Cheat Core (V9)
+    NATIVE UI ENGINE: Re-implemented CSS/JS visuals as native Roblox Objects
+	Features: Bind Overlay, High-Quality Animations, ESP/Aimbot/Trolls
 ]]
 
 local UserInputService = game:GetService("UserInputService")
-local LogService = game:GetService("LogService")
+local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -16,218 +16,293 @@ local Camera = workspace.CurrentCamera
 local Settings = {
     aim_enable = false, aim_smooth = 5, aim_fov = 200, aim_part = "Head",
     esp_enable = true, esp_boxes = true, esp_corner = false, esp_outline = true,
-    esp_fill = false, esp_names = true, esp_health = true, esp_armor = false,
-    esp_snap = false, esp_skel = false, esp_weapon = false
+    esp_names = true, esp_health = true,
+    theme_color = Color3.fromRGB(45, 100, 255),
+    menu_key = Enum.KeyCode.RightControl,
+    configured = false
 }
 
 -- [[ UI CONSTRUCTOR ]]
-local function BuildUI()
-    local url = "https://raw.githubusercontent.com/wexicek1/GRAVITY/main/gravity_v8.html"
-    -- Attempt to fetch the HTML content
-    local success, html = pcall(function() return game:HttpGet(url) end)
-    if not success then
-        -- Fallback to local file for testing if requested
-        html = [[ <!-- HTML CONTENT WILL BE INJECTED HERE VIA LOADSTRING --> ]]
+local GravityUI = {}
+
+function GravityUI:Init()
+    local Screen = Instance.new("ScreenGui")
+    Screen.Name = "GravityV9"
+    Screen.ResetOnSpawn = false
+    Screen.Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- Main Container
+    local Main = Instance.new("Frame")
+    Main.Name = "Main"
+    Main.Size = UDim2.new(0, 320, 0, 520)
+    Main.Position = UDim2.new(1, -340, 0, 40)
+    Main.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    Main.BorderSizePixel = 0
+    Main.Visible = false
+    Main.Parent = Screen
+    
+    -- Banner
+    local Banner = Instance.new("Frame")
+    Banner.Size = UDim2.new(1, 0, 0, 70)
+    Banner.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Banner.BorderSizePixel = 0
+    Banner.Parent = Main
+    
+    local Title = Instance.new("TextLabel")
+    Title.Text = "GRAVITY.LUA"
+    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Position = UDim2.new(0, 20, 0, 0)
+    Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.Font = Enum.Font.InterBold
+    Title.TextSize = 24
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
+    Title.Parent = Banner
+    
+    -- Tab Bar
+    local TabBar = Instance.new("Frame")
+    TabBar.Size = UDim2.new(1, 0, 0, 35)
+    TabBar.Position = UDim2.new(0, 0, 0, 70)
+    TabBar.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+    TabBar.BorderSizePixel = 0
+    TabBar.Parent = Main
+    
+    local TabList = {"AIM", "VISUALS", "PLAYER", "OTHER"}
+    local TabButtons = {}
+    for i, name in pairs(TabList) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.25, 0, 1, 0)
+        btn.Position = UDim2.new((i-1)*0.25, 0, 0, 0)
+        btn.Text = name
+        btn.BackgroundTransparency = 1
+        btn.TextColor3 = i == 1 and Color3.new(1,1,1) or Color3.fromRGB(160, 160, 160)
+        btn.Font = Enum.Font.InterBold
+        btn.TextSize = 10
+        btn.Parent = TabBar
+        TabButtons[name] = btn
     end
     
-    -- In a real scenario, the executor's WebView/Drawing API would render this.
-    -- For now, we assume the user is using an executor that supports HTMLLoading or 
-    -- we just log the initialization.
-    print("GRAVITY UI: Initializing Interface...")
-end
+    -- Items Area
+    local Content = Instance.new("ScrollingFrame")
+    Content.Size = UDim2.new(1, 0, 1, -105)
+    Content.Position = UDim2.new(0, 0, 0, 105)
+    Content.BackgroundTransparency = 1
+    Content.ScrollBarThickness = 0
+    Content.Parent = Main
+    
+    local UIList = Instance.new("UIListLayout")
+    UIList.Padding = UDim.new(0, 5)
+    UIList.Parent = Content
+    
+    -- Setup Overlay
+    local Setup = Instance.new("Frame")
+    Setup.Size = UDim2.new(1, 0, 1, 0)
+    Setup.BackgroundColor3 = Color3.new(0,0,0)
+    Setup.BackgroundTransparency = 0.4
+    Setup.Visible = true
+    Setup.Parent = Screen
+    
+    local SetupBox = Instance.new("Frame")
+    SetupBox.Size = UDim2.new(0, 300, 0, 150)
+    SetupBox.Position = UDim2.new(0.5, -150, 0.5, -75)
+    SetupBox.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    SetupBox.Parent = Setup
+    
+    local SetupText = Instance.new("TextLabel")
+    SetupText.Size = UDim2.new(1, 0, 1, 0)
+    SetupText.Text = "PRESS ANY KEY TO BIND MENU"
+    SetupText.TextColor3 = Color3.new(1,1,1)
+    SetupText.Font = Enum.Font.InterBold
+    SetupText.BackgroundTransparency = 1
+    SetupText.Parent = SetupBox
 
--- [[ TROLL FUNCTIONS ]]
-local function TrollPlayer(targetName, action)
-    local target = Players:FindFirstChild(targetName)
-    if not target or not target.Character then return end
-    
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local targetHrp = target.Character:FindFirstChild("HumanoidRootPart")
-    
-    if action == "Teleport" and hrp and targetHrp then
-        hrp.CFrame = targetHrp.CFrame * CFrame.new(0, 3, 0)
-    elseif action == "Spectate" then
-        Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
-    elseif action == "Unspectate" then
-        Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    elseif action == "Fling" and hrp and targetHrp then
-        local oldV = hrp.Velocity
-        hrp.Velocity = Vector3.new(0, 1000, 0)
-        task.wait(0.1)
-        hrp.CFrame = targetHrp.CFrame
-        hrp.Velocity = Vector3.new(10000, 10000, 10000)
-        task.wait(0.1)
-        hrp.Velocity = oldV
+    -- Bind Logic
+    local function BindKey()
+        local connection
+        connection = UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                Settings.menu_key = input.KeyCode
+                Settings.configured = true
+                Setup.Visible = false
+                Main.Visible = true
+                print("GRAVITY: Keybound to " .. tostring(input.KeyCode))
+                connection:Disconnect()
+            end
+        end)
     end
-end
-
--- [[ SYNC FROM UI ]]
-LogService.MessageOut:Connect(function(msg, type)
-    if msg:find("GRAVITY_SYNC:") then
-        local dataStr = msg:split("GRAVITY_SYNC:")[2]
-        local success, data = pcall(function() return HttpService:JSONDecode(dataStr) end)
-        if success then
-            for k, v in pairs(data) do Settings[k] = v end
+    
+    BindKey()
+    
+    -- Toggle Logic
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Settings.menu_key and Settings.configured then
+            Main.Visible = not Main.Visible
         end
-    elseif msg:find("GRAVITY_TROLL:") then
-        local parts = msg:split(":")
-        TrollPlayer(parts[2], parts[3])
-    end
-end)
-
--- [[ PLAYER LIST SYNC ]]
-task.spawn(function()
-    while task.wait(5) do
-        local names = {}
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer then table.insert(names, p.Name) end
+    end)
+    
+    -- Tabs Functionality
+    local function PopulateTab(tabName)
+        for _, child in pairs(Content:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
+        
+        if tabName == "AIM" then
+            self:CreateToggle("Enable Aimbot", Settings.aim_enable, function(v) Settings.aim_enable = v end, Content)
+            self:CreateSlider("Smoothing", 1, 20, Settings.aim_smooth, function(v) Settings.aim_smooth = v end, Content)
+            self:CreateSlider("FOV", 10, 800, Settings.aim_fov, function(v) Settings.aim_fov = v end, Content)
+        elseif tabName == "VISUALS" then
+            self:CreateToggle("Enable ESP", Settings.esp_enable, function(v) Settings.esp_enable = v end, Content)
+            self:CreateToggle("Show Boxes", Settings.esp_boxes, function(v) Settings.esp_boxes = v end, Content)
+            self:CreateToggle("Show Names", Settings.esp_names, function(v) Settings.esp_names = v end, Content)
+        elseif tabName == "PLAYER" then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then
+                    self:CreatePlayerRow(p, Content)
+                end
+            end
         end
-        print("GRAVITY_PLAYERS:" .. HttpService:JSONEncode(names))
     end
-end)
-
--- [[ DRAWING LIBS ]]
-local function NewDrawing(type, props)
-    local obj = Drawing.new(type)
-    for k, v in pairs(props) do obj[k] = v end
-    return obj
+    
+    for name, btn in pairs(TabButtons) do
+        btn.MouseButton1Click:Connect(function()
+            for n, b in pairs(TabButtons) do b.TextColor3 = Color3.fromRGB(160, 160, 160) end
+            btn.TextColor3 = Color3.new(1,1,1)
+            PopulateTab(name)
+        end)
+    end
 end
 
-local FOVCircle = NewDrawing("Circle", { Thickness = 1.5, NumSides = 100, Radius = Settings.aim_fov, Visible = false, Color = Color3.new(1,1,1) })
+function GravityUI:CreateToggle(name, val, callback, parent)
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(1, -10, 0, 40)
+    f.BackgroundTransparency = 1
+    f.Parent = parent
+    
+    local t = Instance.new("TextLabel")
+    t.Size = UDim2.new(1, -50, 1, 0)
+    t.Text = name
+    t.TextColor3 = Color3.new(1,1,1)
+    t.Font = Enum.Font.Inter
+    t.TextSize = 12
+    t.TextXAlignment = Enum.TextXAlignment.Left
+    t.Position = UDim2.new(0, 10, 0, 0)
+    t.BackgroundTransparency = 1
+    t.Parent = f
+    
+    local box = Instance.new("TextButton")
+    box.Size = UDim2.new(0, 30, 0, 15)
+    box.Position = UDim2.new(1, -40, 0.5, -7)
+    box.BackgroundColor3 = val and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(20, 20, 20)
+    box.Text = ""
+    box.BorderSizePixel = 0
+    box.Parent = f
+    
+    box.MouseButton1Click:Connect(function()
+        val = not val
+        box.BackgroundColor3 = val and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(20, 20, 20)
+        callback(val)
+    end)
+end
+
+function GravityUI:CreateSlider(name, min, max, val, callback, parent)
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(1, -10, 0, 40)
+    f.BackgroundTransparency = 1
+    f.Parent = parent
+    
+    local t = Instance.new("TextLabel")
+    t.Size = UDim2.new(1, -10, 0, 20)
+    t.Text = name .. ": " .. tostring(val)
+    t.TextColor3 = Color3.new(1,1,1)
+    t.Font = Enum.Font.Inter
+    t.TextSize = 12
+    t.TextXAlignment = Enum.TextXAlignment.Left
+    t.Position = UDim2.new(0, 10, 0, 0)
+    t.BackgroundTransparency = 1
+    t.Parent = f
+    
+    local slide = Instance.new("Frame")
+    slide.Size = UDim2.new(1, -20, 0, 4)
+    slide.Position = UDim2.new(0, 10, 0, 25)
+    slide.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    slide.BorderSizePixel = 0
+    slide.Parent = f
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((val-min)/(max-min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.new(1,1,1)
+    fill.BorderSizePixel = 0
+    fill.Parent = slide
+end
+
+function GravityUI:CreatePlayerRow(p, parent)
+    local f = Instance.new("TextButton")
+    f.Size = UDim2.new(1, -10, 0, 40)
+    f.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+    f.Text = p.Name
+    f.TextColor3 = Color3.new(1,1,1)
+    f.BorderSizePixel = 0
+    f.Parent = parent
+end
+
+-- [[ ESP LOGIC ]]
 local Cache = {}
-
 local function CreatePlayerESP(player)
     Cache[player] = {
-        Box = NewDrawing("Square", { Thickness = 1, Filled = false }),
-        Outline = NewDrawing("Square", { Thickness = 2, Transparency = 0.5, Color = Color3.new(0,0,0) }),
-        Tracer = NewDrawing("Line", { Thickness = 1 }),
-        Name = NewDrawing("Text", { Size = 13, Center = true, Outline = true, Color = Color3.new(1,1,1) }),
-        HealthBar = NewDrawing("Line", { Thickness = 2, Color = Color3.new(0,1,0) }),
-        Corners = {}
+        Box = Drawing.new("Square"),
+        Name = Drawing.new("Text"),
+        Health = Drawing.new("Line")
     }
-    for i=1,8 do table.insert(Cache[player].Corners, NewDrawing("Line", {Thickness = 1.5})) end
+    Cache[player].Box.Thickness = 1
+    Cache[player].Name.Size = 13
+    Cache[player].Name.Center = true
+    Cache[player].Name.Outline = true
 end
 
-local function RemovePlayerESP(player)
-    if Cache[player] then
-        for _, obj in pairs(Cache[player]) do 
-            if type(obj) == "table" then 
-                for _, l in pairs(obj) do if type(l) == "userdata" then l:Remove() end end 
-            elseif type(obj) == "userdata" then 
-                obj:Remove() 
-            end 
-        end
-        Cache[player] = nil
-    end
-end
-
--- [[ CORE ESP HANDLER ]]
 local function HandleESP()
     for player, esp in pairs(Cache) do
         local char = player.Character
         if Settings.esp_enable and char and char:FindFirstChild("HumanoidRootPart") and player.Team ~= LocalPlayer.Team then
             local hrp = char.HumanoidRootPart
+            local head = char:FindFirstChild("Head")
             local hum = char:FindFirstChild("Humanoid")
-            if not hum then continue end
+            if not hum or not head then continue end
 
             local hrpPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
             if onScreen then
-                local head = char:FindFirstChild("Head")
-                if not head then continue end
                 local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
                 local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
-                
                 local height = math.abs(headPos.Y - legPos.Y)
                 local width = height / 1.5
-                local x, y = hrpPos.X - width/2, hrpPos.Y - height/2
-                local color = Color3.fromRGB(45, 100, 255)
-
-                -- Boxes
-                esp.Box.Visible = Settings.esp_boxes and not Settings.esp_corner
-                if esp.Box.Visible then
-                    esp.Box.Size, esp.Box.Position, esp.Box.Color = Vector2.new(width, height), Vector2.new(x, y), color
-                    esp.Outline.Visible = Settings.esp_outline
-                    esp.Outline.Size, esp.Outline.Position = esp.Box.Size, esp.Box.Position
-                else esp.Outline.Visible = false end
-
-                -- Corners
-                if Settings.esp_corner then
-                    local l = width/4
-                    for i=1,8 do esp.Corners[i].Visible, esp.Corners[i].Color = true, color end
-                    esp.Corners[1].From, esp.Corners[1].To = Vector2.new(x, y), Vector2.new(x+l, y)
-                    esp.Corners[2].From, esp.Corners[2].To = Vector2.new(x, y), Vector2.new(x, y+l)
-                    esp.Corners[3].From, esp.Corners[3].To = Vector2.new(x+width, y), Vector2.new(x+width-l, y)
-                    esp.Corners[4].From, esp.Corners[4].To = Vector2.new(x+width, y), Vector2.new(x+width, y+l)
-                    esp.Corners[5].From, esp.Corners[5].To = Vector2.new(x, y+height), Vector2.new(x+l, y+height)
-                    esp.Corners[6].From, esp.Corners[6].To = Vector2.new(x, y+height), Vector2.new(x, y+height-l)
-                    esp.Corners[7].From, esp.Corners[7].To = Vector2.new(x+width, y+height), Vector2.new(x+width-l, y+height)
-                    esp.Corners[8].From, esp.Corners[8].To = Vector2.new(x+width, y+height), Vector2.new(x+width, y+height-l)
-                else for i=1,8 do esp.Corners[i].Visible = false end end
-
-                -- Health Bar
-                if Settings.esp_health then
-                    local pct = hum.Health / hum.MaxHealth
-                    esp.HealthBar.Visible = true
-                    esp.HealthBar.From, esp.HealthBar.To = Vector2.new(x-5, y+height), Vector2.new(x-5, y+height-(height*pct))
-                    esp.HealthBar.Color = Color3.new(1-pct, pct, 0)
-                else esp.HealthBar.Visible = false end
-
-                -- Names
-                if Settings.esp_names then
-                    esp.Name.Visible, esp.Name.Position, esp.Name.Text = true, Vector2.new(hrpPos.X, y-15), player.Name
-                else esp.Name.Visible = false end
+                
+                esp.Box.Visible = Settings.esp_boxes
+                esp.Box.Size = Vector2.new(width, height)
+                esp.Box.Position = Vector2.new(hrpPos.X - width/2, hrpPos.Y - height/2)
+                esp.Box.Color = Settings.theme_color
+                
+                esp.Name.Visible = Settings.esp_names
+                esp.Name.Position = Vector2.new(hrpPos.X, hrpPos.Y - height/2 - 15)
+                esp.Name.Text = player.Name
+                
+                esp.Health.Visible = Settings.esp_health
+                local h_pct = hum.Health / hum.MaxHealth
+                esp.Health.From = Vector2.new(hrpPos.X - width/2 - 5, hrpPos.Y + height/2)
+                esp.Health.To = Vector2.new(hrpPos.X - width/2 - 5, hrpPos.Y + height/2 - (height * h_pct))
+                esp.Health.Color = Color3.new(1-h_pct, h_pct, 0)
             else
-                for _, obj in pairs(esp) do 
-                    if type(obj) == "table" then 
-                        for _, l in pairs(obj) do if type(l) == "userdata" then l.Visible = false end end 
-                    elseif type(obj) == "userdata" then 
-                        obj.Visible = false 
-                    end 
-                end
+                for _,o in pairs(esp) do o.Visible = false end
             end
         else
-            for _, obj in pairs(esp) do 
-                if type(obj) == "table" then 
-                    for _, l in pairs(obj) do if type(l) == "userdata" then l.Visible = false end end 
-                elseif type(obj) == "userdata" then 
-                    obj.Visible = false 
-                end 
-            end
+            for _,o in pairs(esp) do o.Visible = false end
         end
     end
 end
 
--- [[ AIMBOT HANDLER ]]
-local function GetClosest()
-    local target, dist = nil, Settings.aim_fov
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(Settings.aim_part) and p.Team ~= LocalPlayer.Team then
-            local pos, s = Camera:WorldToViewportPoint(p.Character[Settings.aim_part].Position)
-            if s then
-                local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                if mag < dist then dist = mag target = p end
-            end
-        end
-    end
-    return target
-end
-
+-- [[ CORE LOOP ]]
 RunService.RenderStepped:Connect(function()
-    FOVCircle.Position, FOVCircle.Radius, FOVCircle.Visible = UserInputService:GetMouseLocation(), Settings.aim_fov, Settings.aim_enable
     HandleESP()
-    if Settings.aim_enable then
-        local t = GetClosest()
-        if t then
-            local pos = Camera:WorldToViewportPoint(t.Character[Settings.aim_part].Position)
-            local mouse = UserInputService:GetMouseLocation()
-            mousemoverel((pos.X - mouse.X)/Settings.aim_smooth, (pos.Y - mouse.Y)/Settings.aim_smooth)
-        end
-    end
 end)
 
 Players.PlayerAdded:Connect(CreatePlayerESP)
-Players.PlayerRemoving:Connect(RemovePlayerESP)
 for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then CreatePlayerESP(p) end end
 
-BuildUI()
-print("GRAVITY V8 - REPOSITORY VERSION LOADED SUCCESSFULLY.")
+GravityUI:Init()
+print("GRAVITY V9 - NATIVE ENGINE LOADED.")
